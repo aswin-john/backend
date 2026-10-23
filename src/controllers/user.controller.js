@@ -1,5 +1,6 @@
 const User = require("../models/user.model");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 // console.log("USER MODEL:", User);
 // console.log("USER CREATE:", User.create);
 
@@ -124,19 +125,29 @@ const loginUser = async (req, res) => {
       });
     }
 
-    if (password !== user.password) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
       return res.status(401).json({
         message: "Invalid email or password",
       });
     }
 
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
     res.status(200).json({
       message: "User logged in successfully",
+      token,
       // user,
       // name: user.name,
       // email: user.email,
-      name: user.name,
-      email: user.email,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (error) {
     // MongoDB duplicate-key error
